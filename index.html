@@ -4,7 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>NEXUS Pre-HB-Q10 Pathway</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23000'/><circle cx='50' cy='50' r='38' fill='none' stroke='%2300ff87' stroke-width='5'/><path d='M30 50 L45 65 L72 32' fill='none' stroke='%2360efff' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+<meta name="theme-color" content="#00ff87">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pre-HB-Q10">
+<link rel="manifest" href="data:application/json,{"name":"NEXUS Pre-HB-Q10 Pathway","short_name":"Pre-HB-Q10","start_url":".","display":"standalone","background_color":"#0a0a0f","theme_color":"#00ff87","icons":[{"src":"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23000'/><circle cx='50' cy='50' r='38' fill='none' stroke='%2300ff87' stroke-width='5'/><path d='M30 50 L45 65 L72 32' fill='none' stroke='%2360efff' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/></svg>","sizes":"192x192","type":"image/svg+xml"}]}">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' fill='%23000'/><circle cx='90' cy='90' r='70' fill='none' stroke='%2300ff87' stroke-width='8'/><path d='M55 90 L80 115 L130 55' fill='none' stroke='%2360efff' stroke-width='10' stroke-linecap='round' stroke-linejoin='round'/></svg>">
 <style>
   :root {
     --green: #00ff87;
@@ -252,7 +257,6 @@ function render() {
     container.appendChild(el);
   });
 
-  // Safety meeting always visible after, no gate
   const safety = document.createElement('div');
   safety.className = 'step';
   safety.innerHTML = `
@@ -266,6 +270,8 @@ function render() {
 
   const total = STEPS.length;
   const pct = Math.round(doneCount / total * 100);
+  progress = pct / 100;
+  updateParticles();
   document.getElementById('fill').style.width = pct + '%';
   document.getElementById('prog').textContent = doneCount + ' / ' + total + ' foundations locked';
   const circ = 289;
@@ -283,10 +289,15 @@ document.getElementById('steps').addEventListener('click', e => {
   render();
 });
 
-// Canvas particles
 const canvas = document.getElementById('bg');
 const ctx = canvas.getContext('2d');
+let progress = 0;
 let particles = [];
+function updateParticles() {
+  const target = 40 + Math.round(progress * 80);
+  while (particles.length < target) particles.push(new P());
+  while (particles.length > target) particles.pop();
+}
 function resize() {
   canvas.width = innerWidth;
   canvas.height = innerHeight;
@@ -308,22 +319,40 @@ class P {
     this.x += this.vx; this.y += this.vy;
     if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) this.reset();
   }
-  draw() {
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.s, 0, Math.PI * 2);
-    ctx.fillStyle = this.c;
-    ctx.globalAlpha = this.a;
-    ctx.fill();
-  }
 }
-for (let i = 0; i < 70; i++) particles.push(new P());
 function loop() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  particles.forEach(p => { p.update(); p.draw(); });
+  const intensity = 0.3 + progress * 0.7;
+  particles.forEach(p => {
+    p.update();
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.s * (1 + progress * 0.6), 0, Math.PI * 2);
+    ctx.fillStyle = p.c;
+    ctx.globalAlpha = p.a * intensity;
+    ctx.fill();
+  });
+  if (progress > 0.2) {
+    for (let i = 0; i < particles.length; i += 3) {
+      for (let j = i + 1; j < Math.min(i + 4, particles.length); j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < 140 + progress * 40) {
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.strokeStyle = `rgba(0,255,135,${0.12 * progress * (1 - dist / 180)})`;
+          ctx.lineWidth = 0.6;
+          ctx.stroke();
+        }
+      }
+    }
+  }
   requestAnimationFrame(loop);
 }
+for (let i = 0; i < 40; i++) particles.push(new P());
+updateParticles();
 loop();
-
 render();
 </script>
 </body>
